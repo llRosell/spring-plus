@@ -1,4 +1,4 @@
-package org.example.expert.domain.config;
+package org.example.expert.config;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
