@@ -63,4 +63,13 @@ public class JwtUtil {
                 .parseClaimsJws(token)
                 .getBody();
     }
+
+    public boolean validateToken(String token) {
+        try {
+            Claims claims = extractClaims(token); // claims 추출
+            return !claims.getExpiration().before(new Date()); // 만료일 체크
+        } catch (Exception e) {
+            return false; // 유효하지 않으면 false 반환
+        }
+    }
 }
