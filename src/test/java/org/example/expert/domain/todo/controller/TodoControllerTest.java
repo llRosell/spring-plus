@@ -7,11 +7,13 @@ import org.example.expert.domain.todo.service.TodoService;
 import org.example.expert.domain.user.dto.response.UserResponse;
 import org.example.expert.domain.user.entity.User;
 import org.example.expert.domain.user.enums.UserRole;
+import org.example.expert.config.JwtUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
@@ -30,7 +32,11 @@ class TodoControllerTest {
     @MockBean
     private TodoService todoService;
 
+    @MockBean
+    private JwtUtil jwtUtil;
+
     @Test
+    @WithMockUser(username = "testuser", roles = {"USER"})
     void todo_단건_조회에_성공한다() throws Exception {
         // given
         long todoId = 1L;
@@ -59,6 +65,7 @@ class TodoControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "testuser", roles = {"USER"})
     void todo_단건_조회_시_todo가_존재하지_않아_예외가_발생한다() throws Exception {
         // given
         long todoId = 1L;
