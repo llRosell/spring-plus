@@ -8,7 +8,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.Collections;
 
-public record AuthUser(Long id, String email, String nickname, UserRole userRole) implements UserDetails {
+public record AuthUser(Long id, String email, String nickname, UserRole userRole, String password) implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -17,12 +17,12 @@ public record AuthUser(Long id, String email, String nickname, UserRole userRole
 
     @Override
     public String getPassword() {
-        return null;
+        return password; // 실제 비밀번호를 반환하도록 수정
     }
 
     @Override
     public String getUsername() {
-        return email;
+        return email; // 이메일을 사용자 이름으로 사용
     }
 
     @Override

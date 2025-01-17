@@ -39,8 +39,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String nickname = claims.get("nickname", String.class);
                 UserRole userRole = UserRole.of(claims.get("userRole", String.class));
 
+
+                // 비밀번호가 없다면 null을 전달
+                String password = null;
+
                 // AuthUser 객체 생성
-                AuthUser authUser = new AuthUser(userId, email, nickname, userRole);
+                AuthUser authUser = new AuthUser(userId, email, nickname, userRole, password);
 
                 // 인증 객체 생성
                 UsernamePasswordAuthenticationToken authentication =
