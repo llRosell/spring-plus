@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.expert.domain.common.exception.ServerException;
 import org.example.expert.domain.user.enums.UserRole;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -21,7 +22,7 @@ import java.util.Date;
 public class JwtUtil {
 
     private static final String BEARER_PREFIX = "Bearer ";
-    private static final long TOKEN_TIME = 60 * 60 * 1000L; // 60분
+    private static final long TOKEN_TIME = 60 * 60 * 1000L; // 60 minutes
 
     @Value("${jwt.secret.key}")
     private String secretKey;
@@ -44,9 +45,21 @@ public class JwtUtil {
                         .claim("nickname", nickname)
                         .claim("userRole", userRole)
                         .setExpiration(new Date(date.getTime() + TOKEN_TIME))
-                        .setIssuedAt(date) // 발급일
-                        .signWith(key, signatureAlgorithm) // 암호화 알고리즘
+                        .setIssuedAt(date)
+                        .signWith(key, signatureAlgorithm)
                         .compact();
+    }
+
+    public String generateToken(Authentication authentication) {
+        Long userId = Long.valueOf(authentication.getName()); // Assuming username is userId
+        String email = ""; // You may want to implement a way to extract the email
+        String nickname = ""; // Similarly, extract the nickname if available
+        UserRole userRole = UserRole.valueOf(authentication.getAuthorities().stream()
+                .findFirst()
+                .map(authority -> authority.getAuthority())
+                .orElse("USER")); // Defaulting to USER if no role found
+
+        return createToken(userId, email, nickname, userRole);
     }
 
     public String substringToken(String tokenValue) {
@@ -66,10 +79,10 @@ public class JwtUtil {
 
     public boolean validateToken(String token) {
         try {
-            Claims claims = extractClaims(token); // claims 추출
-            return !claims.getExpiration().before(new Date()); // 만료일 체크
+            Claims claims = extractClaims(token);
+            return !claims.getExpiration().before(new Date());
         } catch (Exception e) {
-            return false; // 유효하지 않으면 false 반환
+            return false; // Return false if token is invalid
         }
     }
 }

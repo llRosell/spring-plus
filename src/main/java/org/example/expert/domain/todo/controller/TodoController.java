@@ -39,7 +39,7 @@ public class TodoController {
             @RequestParam("weather") String weather,
             @RequestParam LocalDateTime startDate,
             @RequestParam LocalDateTime endDate
-            ) {
+    ) {
         return ResponseEntity.ok(todoService.getTodos(page, size, weather, startDate, endDate));
     }
 

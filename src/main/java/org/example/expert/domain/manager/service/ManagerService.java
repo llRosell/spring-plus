@@ -28,31 +28,53 @@ public class ManagerService {
     private final ManagerRepository managerRepository;
     private final UserRepository userRepository;
     private final TodoRepository todoRepository;
+    private final LogService logService;
 
     @Transactional
     public ManagerSaveResponse saveManager(AuthUser authUser, long todoId, ManagerSaveRequest managerSaveRequest) {
-        // 일정을 만든 유저
+
+        // 로그인한 유저가 null인지 확인
+        if (authUser == null) {
+            throw new InvalidRequestException("로그인된 사용자가 없습니다.");
+        }
+        // 로그인한 유저
         User user = User.fromAuthUser(authUser);
+
+        // Todo 찾기
         Todo todo = todoRepository.findById(todoId)
                 .orElseThrow(() -> new InvalidRequestException("Todo not found"));
 
-        // 현재 로그인한 유저와 Todo의 user가 같은지 확인
+        // Todo의 작성자와 현재 로그인한 유저가 같은지 확인
         if (!todo.getUser().getId().equals(authUser.id())) {
+            System.out.println("Todo user ID: " + todo.getUser().getId());
+            System.out.println("Logged-in user ID: " + user.getId());
             throw new InvalidRequestException("담당자를 등록하려고 하는 유저가 유효하지 않거나, 일정을 만든 유저가 아닙니다.");
         }
 
+        // 매니저로 등록할 유저 찾기
         User managerUser = userRepository.findById(managerSaveRequest.getManagerUserId())
                 .orElseThrow(() -> new InvalidRequestException("등록하려고 하는 담당자 유저가 존재하지 않습니다."));
 
-        if (ObjectUtils.nullSafeEquals(user.getId(), managerUser.getId())) {
+        // 로그인한 유저가 본인 자신을 매니저로 등록하지 못하도록 확인
+        if (user.getId().equals(managerUser.getId())) {
             throw new InvalidRequestException("일정 작성자는 본인을 담당자로 등록할 수 없습니다.");
         }
 
-        Manager newManagerUser = new Manager(managerUser, todo);
-        Manager savedManagerUser = managerRepository.save(newManagerUser);
+        // 매니저 객체 생성 및 저장
+        Manager newManager = new Manager(managerUser, todo);
+        Manager savedManager = managerRepository.save(newManager);
 
+        // 로그 기록
+        logService.createLog(
+                "매니저가 등록되었습니다.",
+                savedManager,
+                todo,
+                user
+        );
+
+        // 매니저 등록 응답
         return new ManagerSaveResponse(
-                savedManagerUser.getId(),
+                savedManager.getId(),
                 new UserResponse(managerUser.getId(), managerUser.getEmail())
         );
     }
