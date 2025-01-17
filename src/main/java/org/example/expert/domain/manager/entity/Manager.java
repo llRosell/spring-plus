@@ -15,7 +15,7 @@ public class Manager {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
     @JoinColumn(name = "user_id", nullable = false) // 일정 만든 사람 id
     private User user;
     @ManyToOne(fetch = FetchType.LAZY) // 일정 id

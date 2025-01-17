@@ -19,15 +19,6 @@ public class ManagerController {
 
     private final ManagerService managerService;
 
-    @PostMapping("/todos/{todoId}/managers")
-    public ResponseEntity<ManagerSaveResponse> saveManager(
-            @AuthenticationPrincipal AuthUser authUser,
-            @PathVariable long todoId,
-            @Valid @RequestBody ManagerSaveRequest managerSaveRequest
-    ) {
-        return ResponseEntity.ok(managerService.saveManager(authUser, todoId, managerSaveRequest));
-    }
-
     @GetMapping("/todos/{todoId}/managers")
     public ResponseEntity<List<ManagerResponse>> getMembers(@PathVariable long todoId) {
         return ResponseEntity.ok(managerService.getManagers(todoId));

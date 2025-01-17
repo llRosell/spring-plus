@@ -7,10 +7,12 @@ import org.example.expert.domain.common.exception.InvalidRequestException;
 import org.example.expert.domain.todo.dto.request.TodoSaveRequest;
 import org.example.expert.domain.todo.dto.response.TodoResponse;
 import org.example.expert.domain.todo.dto.response.TodoSaveResponse;
+import org.example.expert.domain.todo.dto.response.TodoSearchResponse;
 import org.example.expert.domain.todo.entity.Todo;
 import org.example.expert.domain.todo.repository.TodoRepository;
 import org.example.expert.domain.user.dto.response.UserResponse;
 import org.example.expert.domain.user.entity.User;
+import org.example.expert.domain.user.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -25,11 +28,22 @@ import java.time.LocalDateTime;
 public class TodoService {
 
     private final TodoRepository todoRepository;
+    private final UserRepository userRepository;
     private final WeatherClient weatherClient;
 
     @Transactional
     public TodoSaveResponse saveTodo(AuthUser authUser, TodoSaveRequest todoSaveRequest) {
-        User user = User.fromAuthUser(authUser);
+        // 기존 이메일로 사용자가 존재하는지 확인
+        Optional<User> existingUser = userRepository.findByEmail(authUser.email());
+
+        // 기존 사용자 정보가 있으면 해당 사용자 사용, 없으면 새로 생성
+        User user;
+        if (existingUser.isPresent()) {
+            user = existingUser.get();  // 이미 존재하는 사용자 사용
+        } else {
+            user = new User(authUser.email(), authUser.nickname(), authUser.userRole());
+            user = userRepository.save(user);  // 새 사용자 생성
+        }
 
         String weather = weatherClient.getTodayWeather();
 
@@ -82,5 +96,20 @@ public class TodoService {
                 todo.getCreatedAt(),
                 todo.getModifiedAt()
         );
+    }
+
+    public Page<TodoSearchResponse> searchTodos(
+            AuthUser authUser, int page, int size, String title, LocalDateTime startDate, LocalDateTime endDate, String nickname) {
+
+        User user = User.fromAuthUser(authUser);
+        Pageable pageable = PageRequest.of(page - 1, size); // Pageable 객체 생성
+
+        // 레포지토리에서 쿼리 실행
+        Page<TodoSearchResponse> todos = todoRepository.searchTodosByTitleAndCreatedAtAndNickname(
+                title, startDate, endDate, nickname, pageable
+        );
+
+        // TodoSearchResponse -> TodoResponse 변환
+        return todos;
     }
 }
