@@ -28,7 +28,6 @@ public class ManagerService {
     private final ManagerRepository managerRepository;
     private final UserRepository userRepository;
     private final TodoRepository todoRepository;
-    private final LogService logService;
 
     @Transactional
     public ManagerSaveResponse saveManager(AuthUser authUser, long todoId, ManagerSaveRequest managerSaveRequest) {
@@ -63,14 +62,6 @@ public class ManagerService {
         // 매니저 객체 생성 및 저장
         Manager newManager = new Manager(managerUser, todo);
         Manager savedManager = managerRepository.save(newManager);
-
-        // 로그 기록
-        logService.createLog(
-                "매니저가 등록되었습니다.",
-                savedManager,
-                todo,
-                user
-        );
 
         // 매니저 등록 응답
         return new ManagerSaveResponse(
