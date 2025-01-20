@@ -1,5 +1,6 @@
 package org.example.expert.domain.todo.controller;
 
+import org.example.expert.config.JwtFilter;
 import org.example.expert.config.JwtUtil;
 import org.example.expert.domain.common.dto.AuthUser;
 import org.example.expert.domain.common.exception.InvalidRequestException;
@@ -8,6 +9,7 @@ import org.example.expert.domain.todo.service.TodoService;
 import org.example.expert.domain.user.dto.response.UserResponse;
 import org.example.expert.domain.user.entity.User;
 import org.example.expert.domain.user.enums.UserRole;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -24,10 +26,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print; // 추가: print 메서드 import
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 
 @WebMvcTest(TodoController.class)
 class TodoControllerTest {
@@ -44,18 +47,33 @@ class TodoControllerTest {
     @MockBean
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 
+    @Autowired
+    private JwtFilter jwtFilter;
+
+    private String token;
+
+    @BeforeEach
+    void setUp() {
+        token = generateToken(); // Generate the token here
+    }
+
     private String generateToken() {
-        // 인증 정보를 생성
+        Long userId = 1L; // Fake user ID
+        String email = "test@example.com"; // Fake email
+        String username = "testUser"; // Fake username
+        UserRole userRole = UserRole.USER; // User role
+
+        AuthUser authUser = new AuthUser(userId, email, username, userRole, null); // Create AuthUser
+
         Authentication authentication = new UsernamePasswordAuthenticationToken(
-                "testUser", // 사용자 이름
+                authUser,
                 null,
-                List.of(new SimpleGrantedAuthority("ROLE_USER")) // 권한
+                List.of(new SimpleGrantedAuthority("ROLE_USER"))
         );
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // JWT 토큰 생성 (Mockito를 이용해 가짜 토큰 생성)
-        when(jwtUtil.generateToken(authentication)).thenReturn("mockJwtToken");
-        return jwtUtil.generateToken(authentication);
+        // Generate JWT token
+        return jwtUtil.generateToken(userId, email, username, userRole);
     }
 
     @Test
@@ -76,18 +94,16 @@ class TodoControllerTest {
                 LocalDateTime.now()
         );
 
-        // JWT 토큰 생성
-        String token = generateToken();
-
         // when
         when(todoService.getTodo(todoId)).thenReturn(response);
 
         // then
         mockMvc.perform(get("/todos/{todoId}", todoId)
-                        .header("Authorization", "Bearer " + token))
+                        .header("Authorization", "Bearer " + token)
+                        .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(todoId))
-                .andDo(print()); // 요청과 응답을 출력
+                .andDo(print()); // Print request and response
     }
 
     @Test
@@ -95,20 +111,18 @@ class TodoControllerTest {
         // given
         long todoId = 1L;
 
-        // JWT 토큰 생성
-        String token = generateToken();
-
         // when
         when(todoService.getTodo(todoId))
                 .thenThrow(new InvalidRequestException("Todo not found"));
 
         // then
         mockMvc.perform(get("/todos/{todoId}", todoId)
-                        .header("Authorization", "Bearer " + token))
+                        .header("Authorization", "Bearer " + token)
+                        .with(csrf()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.name()))
                 .andExpect(jsonPath("$.code").value(HttpStatus.BAD_REQUEST.value()))
                 .andExpect(jsonPath("$.message").value("Todo not found"))
-                .andDo(print()); // 요청과 응답을 출력
+                .andDo(print()); // Print request and response
     }
 }

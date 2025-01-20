@@ -25,15 +25,16 @@ public class TodoController {
 
     @Secured({"ROLE_USER", "ROLE_ADMIN"})
     @PostMapping("/todos")
-    public ResponseEntity<TodoSaveResponse> saveTodo(
+    public ResponseEntity<TodoSaveResponse> saveTodoAPI(
             @AuthenticationPrincipal AuthUser authUser,
             @Valid @RequestBody TodoSaveRequest todoSaveRequest
     ) {
         return ResponseEntity.ok(todoService.saveTodo(authUser, todoSaveRequest));
     }
 
+    @Secured({"ROLE_USER", "ROLE_ADMIN"})
     @GetMapping("/todos")
-    public ResponseEntity<Page<TodoResponse>> getTodosAPU(
+    public ResponseEntity<Page<TodoResponse>> getTodosAPI(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam("weather") String weather,
@@ -43,6 +44,7 @@ public class TodoController {
         return ResponseEntity.ok(todoService.getTodos(page, size, weather, startDate, endDate));
     }
 
+    @Secured({"ROLE_USER", "ROLE_ADMIN"})
     @GetMapping("/todos/{todoId}")
     public ResponseEntity<TodoResponse> getTodoAPI(@PathVariable long todoId) {
         return ResponseEntity.ok(todoService.getTodo(todoId));

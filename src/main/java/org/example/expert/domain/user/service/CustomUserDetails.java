@@ -9,29 +9,25 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
-public class CustomUserDetailsService implements UserDetailsService {
+public class CustomUserDetails implements UserDetailsService {
 
     private final UserRepository userRepository;
 
-    // UserRepository를 주입 받아 사용자 정보 로드
-    public CustomUserDetailsService(UserRepository userRepository) {
+    public CustomUserDetails(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
-    // 인증할 때 호출되는 메서드
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // 사용자 이메일로 찾기 (username은 기본적으로 이메일로 사용)
         User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + username));
 
-        // User 엔티티를 기반으로 AuthUser 객체 반환
         return new AuthUser(
-                user.getId(),            // id
-                user.getEmail(),         // email
-                user.getNickname(),      // nickname
-                user.getUserRole(),      // userRole
-                null                     // 비밀번호는 null로 설정 (권장되는 방식)
+                user.getId(),
+                user.getEmail(),
+                user.getNickname(),
+                user.getUserRole(),
+                user.getPassword() // 비밀번호는 가져오되, AuthUser에서 활용할 수 있도록 반환
         );
     }
 }
