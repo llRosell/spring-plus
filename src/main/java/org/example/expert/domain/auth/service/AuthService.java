@@ -49,16 +49,26 @@ public class AuthService {
     }
 
     public SigninResponse signin(SigninRequest signinRequest) {
-        User user = userRepository.findByEmail(signinRequest.getEmail()).orElseThrow(
-                () -> new InvalidRequestException("가입되지 않은 유저입니다."));
+        // 사용자 인증 처리
+        User user = validateUser(signinRequest);
 
-        // 로그인 시 이메일과 비밀번호가 일치하지 않을 경우 401을 반환합니다.
-        if (!passwordEncoder.matches(signinRequest.getPassword(), user.getPassword())) {
-            throw new AuthException("잘못된 비밀번호입니다.");
+        // JWT 토큰 생성
+        String token = jwtUtil.createToken(user.getId(), user.getEmail(), user.getNickname(), user.getUserRole());
+
+        // 응답 객체에 토큰 포함
+        return new SigninResponse(token, user.getNickname());
+    }
+
+    private User validateUser(SigninRequest request) {
+        // 이메일로 사용자 검색
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
+
+        // 비밀번호 검증
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Invalid email or password");
         }
 
-        String bearerToken = jwtUtil.createToken(user.getId(), user.getEmail(), user.getNickname(), user.getUserRole());
-
-        return new SigninResponse(bearerToken, user.getNickname());
+        return user;
     }
 }

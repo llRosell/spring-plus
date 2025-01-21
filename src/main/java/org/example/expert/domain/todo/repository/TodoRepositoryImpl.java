@@ -95,13 +95,12 @@ public class TodoRepositoryImpl implements TodoRepositoryCustom {
                 .orderBy(qTodo.createdAt.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
-                .fetchResults()  // fetchResults() 사용
-                .getResults();  // 실제 데이터 리스트 반환
+                .fetch();
 
         // 전체 count 계산
         long total = queryFactory
                 .selectFrom(qTodo)
-                .where(condition) // 동적으로 생성된 조건을 사용
+                .where(condition)
                 .fetchCount();
 
         return new PageImpl<>(results, pageable, total);
