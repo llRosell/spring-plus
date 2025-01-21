@@ -13,8 +13,8 @@ import org.example.expert.domain.todo.repository.TodoRepository;
 import org.example.expert.domain.user.dto.response.UserResponse;
 import org.example.expert.domain.user.entity.User;
 import org.example.expert.domain.user.repository.UserRepository;
-import org.example.expert.log.Log;
-import org.example.expert.log.LogRepository;
+import org.example.expert.domain.manager.log.Log;
+import org.example.expert.domain.manager.log.LogRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +32,15 @@ public class ManagerService {
     private final TodoRepository todoRepository;
     private final LogRepository logRepository; // LogRepository 주입 추가
 
+    /**
+     * 매니저를 저장하는 메서드입니다.
+     *
+     * @param authUser          현재 인증된 사용자
+     * @param todoId           매니저를 추가할 todo의 ID
+     * @param managerSaveRequest 저장할 매니저 정보 요청 객체
+     * @return ManagerSaveResponse 저장된 매니저의 응답 정보
+     * @throws InvalidRequestException 유효하지 않은 요청이 있는 경우
+     */
     @Transactional
     public ManagerSaveResponse saveManager(AuthUser authUser, long todoId, ManagerSaveRequest managerSaveRequest) {
         Todo todo = todoRepository.findById(todoId)
@@ -52,12 +61,25 @@ public class ManagerService {
         );
     }
 
+    /**
+     * 로그 기록을 저장하는 메서드입니다.
+     *
+     * @param actionType 로그 유형
+     * @param actionDetail 로그 상세 내용
+     */
     @Transactional(propagation = Propagation.REQUIRES_NEW) // 로그 기록을 위해 새로운 트랜잭션으로 설정
     public void saveLog(String actionType, String actionDetail) {
         Log log = new Log(actionType, actionDetail);
         logRepository.save(log);
     }
 
+    /**
+     * 특정 todo에 대한 매니저 목록을 조회하는 메서드입니다.
+     *
+     * @param todoId 조회할 todo의 ID
+     * @return List<ManagerResponse> 해당 todo에 연관된 매니저 목록
+     * @throws InvalidRequestException 유효하지 않은 요청이 있는 경우
+     */
     public List<ManagerResponse> getManagers(long todoId) {
         Todo todo = todoRepository.findById(todoId)
                 .orElseThrow(() -> new InvalidRequestException("Todo not found"));
@@ -75,6 +97,14 @@ public class ManagerService {
         return dtoList;
     }
 
+    /**
+     * 매니저를 삭제하는 메서드입니다.
+     *
+     * @param authUser  현재 인증된 사용자
+     * @param todoId    매니저를 삭제할 todo의 ID
+     * @param managerId 삭제할 매니저의 ID
+     * @throws InvalidRequestException 유효하지 않은 요청이 있는 경우
+     */
     @Transactional
     public void deleteManager(AuthUser authUser, long todoId, long managerId) {
         // AuthUser의 ID 검증

@@ -14,8 +14,14 @@ public class UserAdminController {
 
     private final UserAdminService userAdminService;
 
+    /**
+     * 특정 사용자의 역할을 변경합니다.
+     *
+     * @param userId                  변경할 사용자의 ID
+     * @param userRoleChangeRequest    사용자 역할 변경 요청 정보
+     */
     @PatchMapping("/admin/users/{userId}")
     public void changeUserRole(@PathVariable long userId, @RequestBody UserRoleChangeRequest userRoleChangeRequest) {
-        userAdminService.changeUserRole(userId, userRoleChangeRequest);
+        userAdminService.changeUserRole(userId, userRoleChangeRequest);  // 사용자 역할 변경 서비스 호출
     }
 }

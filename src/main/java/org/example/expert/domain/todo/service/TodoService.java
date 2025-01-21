@@ -31,6 +31,14 @@ public class TodoService {
     private final UserRepository userRepository;
     private final WeatherClient weatherClient;
 
+    /**
+     * 새로운 Todo 항목을 저장합니다.
+     * 사용자가 이미 존재하는 경우 해당 사용자를 재사용하고, 존재하지 않는 경우 새로 생성합니다.
+     *
+     * @param authUser        인증된 사용자 정보
+     * @param todoSaveRequest 저장할 Todo 항목의 정보
+     * @return TodoSaveResponse 저장된 Todo 항목의 정보
+     */
     @Transactional
     public TodoSaveResponse saveTodo(AuthUser authUser, TodoSaveRequest todoSaveRequest) {
         // 기존 이메일로 사용자가 존재하는지 확인
@@ -45,7 +53,7 @@ public class TodoService {
             user = userRepository.save(user);  // 새 사용자 생성
         }
 
-        String weather = weatherClient.getTodayWeather();
+        String weather = weatherClient.getTodayWeather();  // 오늘의 날씨를 가져옴
 
         Todo newTodo = new Todo(
                 todoSaveRequest.getTitle(),
@@ -53,7 +61,7 @@ public class TodoService {
                 weather,
                 user
         );
-        Todo savedTodo = todoRepository.save(newTodo);
+        Todo savedTodo = todoRepository.save(newTodo);  // Todo 항목 저장
 
         return new TodoSaveResponse(
                 savedTodo.getId(),
@@ -64,6 +72,16 @@ public class TodoService {
         );
     }
 
+    /**
+     * 특정 조건에 따라 Todo 항목을 조회합니다.
+     *
+     * @param page       페이지 번호 (1부터 시작)
+     * @param size       페이지 크기
+     * @param weather    날씨 필터
+     * @param startDate  시작 날짜 (null 가능)
+     * @param endDate    종료 날짜 (null 가능)
+     * @return Page<TodoResponse> 조건에 맞는 Todo 항목의 페이지
+     */
     public Page<TodoResponse> getTodos(int page, int size, String weather, LocalDateTime startDate, LocalDateTime endDate) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
@@ -81,6 +99,13 @@ public class TodoService {
         ));
     }
 
+    /**
+     * 특정 Todo 항목을 ID로 조회합니다.
+     *
+     * @param todoId 조회할 Todo의 ID
+     * @return TodoResponse 해당 Todo 항목의 정보
+     * @throws InvalidRequestException Todo 항목이 존재하지 않을 경우 예외 발생
+     */
     public TodoResponse getTodo(long todoId) {
         Todo todo = todoRepository.findByIdWithUser(todoId)
                 .orElseThrow(() -> new InvalidRequestException("Todo not found"));
@@ -98,6 +123,18 @@ public class TodoService {
         );
     }
 
+    /**
+     * 제목, 날짜, 별명에 따라 Todo 항목을 검색합니다.
+     *
+     * @param authUser   인증된 사용자 정보
+     * @param page       페이지 번호 (1부터 시작)
+     * @param size       페이지 크기
+     * @param title      검색할 Todo의 제목 (null 가능)
+     * @param startDate  시작 날짜 (null 가능)
+     * @param endDate    종료 날짜 (null 가능)
+     * @param nickname   검색할 사용자 별명 (null 가능)
+     * @return Page<TodoSearchResponse> 검색된 Todo 항목의 페이지
+     */
     public Page<TodoSearchResponse> searchTodos(
             AuthUser authUser, int page, int size, String title, LocalDateTime startDate, LocalDateTime endDate, String nickname) {
 

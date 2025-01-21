@@ -1,4 +1,4 @@
-package org.example.expert.log;
+package org.example.expert.domain.manager.log;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
