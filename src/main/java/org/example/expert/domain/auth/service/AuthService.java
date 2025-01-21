@@ -8,6 +8,7 @@ import org.example.expert.domain.auth.dto.request.SignupRequest;
 import org.example.expert.domain.auth.dto.response.SigninResponse;
 import org.example.expert.domain.auth.dto.response.SignupResponse;
 import org.example.expert.domain.auth.exception.AuthException;
+import org.example.expert.domain.common.dto.AuthUser;
 import org.example.expert.domain.common.exception.InvalidRequestException;
 import org.example.expert.domain.user.entity.User;
 import org.example.expert.domain.user.enums.UserRole;
@@ -70,5 +71,13 @@ public class AuthService {
         }
 
         return user;
+    }
+
+    public AuthUser getAuthUserFromSigninRequest(SigninRequest signinRequest) {
+        // 로그인된 사용자 정보를 반환하는 로직 구현
+        User user = userRepository.findByEmail(signinRequest.getEmail())
+                .orElseThrow(() -> new InvalidRequestException("User not found"));
+
+        return new AuthUser(user.getId(), user.getEmail(), user.getNickname(), user.getUserRole(), user.getPassword());
     }
 }

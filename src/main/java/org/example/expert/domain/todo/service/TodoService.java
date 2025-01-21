@@ -34,14 +34,14 @@ public class TodoService {
     @Transactional
     public TodoSaveResponse saveTodo(AuthUser authUser, TodoSaveRequest todoSaveRequest) {
         // 기존 이메일로 사용자가 존재하는지 확인
-        Optional<User> existingUser = userRepository.findByEmail(authUser.email());
+        Optional<User> existingUser = userRepository.findByEmail(authUser.getEmail());
 
         // 기존 사용자 정보가 있으면 해당 사용자 사용, 없으면 새로 생성
         User user;
         if (existingUser.isPresent()) {
             user = existingUser.get();  // 이미 존재하는 사용자 사용
         } else {
-            user = new User(authUser.email(), authUser.nickname(), authUser.userRole());
+            user = new User(authUser.getEmail(), authUser.getNickname(), authUser.getUserRole());
             user = userRepository.save(user);  // 새 사용자 생성
         }
 

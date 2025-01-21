@@ -7,8 +7,12 @@ import org.example.expert.domain.auth.dto.request.SignupRequest;
 import org.example.expert.domain.auth.dto.response.SigninResponse;
 import org.example.expert.domain.auth.dto.response.SignupResponse;
 import org.example.expert.domain.auth.service.AuthService;
+import org.example.expert.domain.common.dto.AuthUser;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,7 +38,14 @@ public class AuthController {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + jwtToken);
 
-        // 3. ResponseEntity를 사용해 헤더와 바디 반환
+        // 3. AuthUser 객체 생성 (userService를 통해 User 정보 가져오기)
+        AuthUser authUser = authService.getAuthUserFromSigninRequest(signinRequest);
+
+        // 4. SecurityContext에 Authentication 설정
+        Authentication authentication = new UsernamePasswordAuthenticationToken(authUser, null, authUser.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        // 5. ResponseEntity를 사용해 헤더와 바디 반환
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(response);

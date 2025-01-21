@@ -25,13 +25,17 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + username));
 
+        // 확인을 위한 로그 추가
+        System.out.println("User found: " + user);
+        System.out.println("User ID: " + user.getId());
+
         // User 엔티티를 기반으로 AuthUser 객체 반환
         return new AuthUser(
                 user.getId(),            // id
                 user.getEmail(),         // email
                 user.getNickname(),      // nickname
                 user.getUserRole(),      // userRole
-                null                     // 비밀번호는 null로 설정 (권장되는 방식)
+                user.getPassword()
         );
     }
 }

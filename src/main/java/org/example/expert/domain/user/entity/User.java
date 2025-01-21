@@ -45,7 +45,7 @@ public class User extends Timestamped {
     }
 
     public static User fromAuthUser(AuthUser authUser) {
-        return new User(authUser.id(), authUser.email(), authUser.nickname(), authUser.userRole());
+        return new User(authUser.getId(), authUser.getEmail(), authUser.getNickname(), authUser.getUserRole());
     }
 
     public void changePassword(String password) {
@@ -54,5 +54,15 @@ public class User extends Timestamped {
 
     public void updateRole(UserRole userRole) {
         this.userRole = userRole;
+    }
+
+    public AuthUser toAuthUser() {
+        return new AuthUser(
+                this.id,
+                this.email,
+                this.nickname,
+                this.userRole,
+                this.password
+        );
     }
 }

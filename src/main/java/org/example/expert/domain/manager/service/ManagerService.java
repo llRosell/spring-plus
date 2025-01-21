@@ -13,9 +13,11 @@ import org.example.expert.domain.todo.repository.TodoRepository;
 import org.example.expert.domain.user.dto.response.UserResponse;
 import org.example.expert.domain.user.entity.User;
 import org.example.expert.domain.user.repository.UserRepository;
+import org.example.expert.log.Log;
+import org.example.expert.log.LogRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.ObjectUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,46 +30,32 @@ public class ManagerService {
     private final ManagerRepository managerRepository;
     private final UserRepository userRepository;
     private final TodoRepository todoRepository;
+    private final LogRepository logRepository; // LogRepository 주입 추가
 
     @Transactional
     public ManagerSaveResponse saveManager(AuthUser authUser, long todoId, ManagerSaveRequest managerSaveRequest) {
-
-        // 로그인한 유저가 null인지 확인
-        if (authUser == null) {
-            throw new InvalidRequestException("로그인된 사용자가 없습니다.");
-        }
-        // 로그인한 유저
-        User user = User.fromAuthUser(authUser);
-
-        // Todo 찾기
         Todo todo = todoRepository.findById(todoId)
                 .orElseThrow(() -> new InvalidRequestException("Todo not found"));
 
-        // Todo의 작성자와 현재 로그인한 유저가 같은지 확인
-        if (!todo.getUser().getId().equals(authUser.id())) {
-            System.out.println("Todo user ID: " + todo.getUser().getId());
-            System.out.println("Logged-in user ID: " + user.getId());
-            throw new InvalidRequestException("담당자를 등록하려고 하는 유저가 유효하지 않거나, 일정을 만든 유저가 아닙니다.");
-        }
-
-        // 매니저로 등록할 유저 찾기
         User managerUser = userRepository.findById(managerSaveRequest.getManagerUserId())
                 .orElseThrow(() -> new InvalidRequestException("등록하려고 하는 담당자 유저가 존재하지 않습니다."));
 
-        // 로그인한 유저가 본인 자신을 매니저로 등록하지 못하도록 확인
-        if (user.getId().equals(managerUser.getId())) {
-            throw new InvalidRequestException("일정 작성자는 본인을 담당자로 등록할 수 없습니다.");
-        }
-
-        // 매니저 객체 생성 및 저장
         Manager newManager = new Manager(managerUser, todo);
         Manager savedManager = managerRepository.save(newManager);
 
-        // 매니저 등록 응답
+        // 로그 기록
+        saveLog("MANAGER_REGISTRATION", "매니저 등록 요청: " + savedManager.getId());
+
         return new ManagerSaveResponse(
                 savedManager.getId(),
                 new UserResponse(managerUser.getId(), managerUser.getEmail())
         );
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW) // 로그 기록을 위해 새로운 트랜잭션으로 설정
+    public void saveLog(String actionType, String actionDetail) {
+        Log log = new Log(actionType, actionDetail);
+        logRepository.save(log);
     }
 
     public List<ManagerResponse> getManagers(long todoId) {
@@ -89,21 +77,23 @@ public class ManagerService {
 
     @Transactional
     public void deleteManager(AuthUser authUser, long todoId, long managerId) {
-        User user = User.fromAuthUser(authUser);
+        // AuthUser의 ID 검증
+        if (authUser == null || authUser.getId() == null) {
+            throw new InvalidRequestException("사용자 인증 정보가 유효하지 않습니다.");
+        }
 
         Todo todo = todoRepository.findById(todoId)
                 .orElseThrow(() -> new InvalidRequestException("Todo not found"));
 
-        // 현재 로그인한 유저와 Todo의 user가 같은지 확인
-        if (!todo.getUser().getId().equals(authUser.id())) {
-            throw new InvalidRequestException("해당 일정을 만든 유저가 유효하지 않습니다.");
+        if (!todo.getUser().getId().equals(authUser.getId())) {
+            throw new InvalidRequestException("일정을 만든 작성자만 매니저를 삭제할 수 있습니다.");
         }
 
         Manager manager = managerRepository.findById(managerId)
                 .orElseThrow(() -> new InvalidRequestException("Manager not found"));
 
-        if (!ObjectUtils.nullSafeEquals(todo.getId(), manager.getTodo().getId())) {
-            throw new InvalidRequestException("해당 일정에 등록된 담당자가 아닙니다.");
+        if (!todo.getId().equals(manager.getTodo().getId())) {
+            throw new InvalidRequestException("해당 일정과 관련된 매니저가 아닙니다.");
         }
 
         managerRepository.delete(manager);
